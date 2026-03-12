@@ -8,12 +8,6 @@ services:
       CONNECTION_TIMEOUT: 60000
       ENABLE_DEBUG_VIEWER: "false"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
 
   capture-service:
     build: ./capture-service
@@ -21,6 +15,5 @@ services:
       BROWSERLESS_WS_URL: ws://browserless:3000?token=${BROWSERLESS_TOKEN:-browseless-local-token}
       PORT: 4000
     depends_on:
-      browserless:
-        condition: service_healthy
+      - browserless
     restart: unless-stopped
