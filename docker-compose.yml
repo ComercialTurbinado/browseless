@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    ports:
+      - "3000:3000"
+    environment:
+      CONCURRENT: 10
+      TOKEN: ${BROWSERLESS_TOKEN:-browseless-local-token}
+      MAX_QUEUE_LENGTH: 50
+      CONNECTION_TIMEOUT: 60000
+      ENABLE_DEBUG_VIEWER: "false"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  capture-service:
+    build: ./capture-service
+    ports:
+      - "4000:4000"
+    environment:
+      BROWSERLESS_WS_URL: ws://browserless:3000?token=${BROWSERLESS_TOKEN:-browseless-local-token}
+      PORT: 4000
+    depends_on:
+      browserless:
+        condition: service_healthy
+    restart: unless-stopped
