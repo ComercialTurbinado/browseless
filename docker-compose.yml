@@ -1,5 +1,5 @@
 services:
-  browserless:
+  browseless:
     image: ghcr.io/browserless/chromium:latest
     environment:
       CONCURRENT: 10
@@ -12,8 +12,8 @@ services:
   capture-service:
     build: ./capture-service
     environment:
-      BROWSERLESS_WS_URL: ws://browserless:3000?token=${BROWSERLESS_TOKEN:-browseless-local-token}
+      BROWSERLESS_WS_URL: ws://browseless:3000?token=${BROWSERLESS_TOKEN:-browseless-local-token}
       PORT: 4000
     depends_on:
-      - browserless
+      - browseless
     restart: unless-stopped

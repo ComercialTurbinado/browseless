@@ -17,7 +17,7 @@ No EasyPanel, crie um novo projeto (ex: **browseless**).
   - `TOKEN` = um token que você definir (ex: `seu-token-secreto`)
   - `MAX_QUEUE_LENGTH` = `50`
   - `CONNECTION_TIMEOUT` = `60000`
-- **Nome do serviço**: use ex. **browserless** (o capture-service vai conectar em `browserless:3000`)
+- **Nome do serviço**: **browseless** (o capture-service conecta em `browseless:3000`)
 
 Salve e faça o deploy.
 
@@ -28,16 +28,16 @@ Salve e faça o deploy.
 - **Build**: o EasyPanel usa o **Dockerfile na raiz** do repo (já configurado para buildar o `capture-service`)
 - **Porta**: Target `4000`; use **Domains & Proxy** e defina o proxy para a porta **4000** (ou publique a porta 4000)
 - **Variáveis de ambiente** (obrigatórias):
-  - `BROWSERLESS_WS_URL` = `ws://browserless:3000?token=seu-token-secreto`  
-    (troque `browserless` pelo **nome exato** do serviço Browserless no EasyPanel e `seu-token-secreto` pelo mesmo valor de `TOKEN` do passo 2)
+  - `BROWSERLESS_WS_URL` = `ws://browseless:3000?token=seu-token-secreto`  
+    (troque `seu-token-secreto` pelo mesmo valor de `TOKEN` do passo 2)
   - `PORT` = `4000`
 - **Nome do serviço**: ex. **capture-service**
 
-Salve e faça o deploy (após o browserless estar rodando).
+Salve e faça o deploy (após o browseless estar rodando).
 
 ## 4. Conferir
 
-- Serviço **browserless**: deve estar “Running”.
+- Serviço **browseless**: deve estar “Running”.
 - Serviço **capture-service**: deve estar “Running” e conseguir conectar em `BROWSERLESS_WS_URL`.
 
 Teste o endpoint (troque pelo seu domínio ou IP:porta do capture-service):
@@ -52,8 +52,8 @@ curl -X POST https://seu-dominio-capture-service.com/open \
 
 | Serviço           | Variável             | Exemplo / Observação                          |
 |-------------------|----------------------|-----------------------------------------------|
-| browserless       | `TOKEN`              | `seu-token-secreto`                           |
-| capture-service   | `BROWSERLESS_WS_URL` | `ws://browserless:3000?token=seu-token-secreto` |
+| browseless       | `TOKEN`              | `seu-token-secreto`                           |
+| capture-service   | `BROWSERLESS_WS_URL` | `ws://browseless:3000?token=seu-token-secreto` |
 | capture-service   | `PORT`               | `4000`                                        |
 
-O hostname `browserless` funciona porque os dois serviços estão no mesmo projeto; no Docker Swarm o nome do serviço vira hostname na rede interna.
+O hostname `browseless` funciona porque os dois serviços estão no mesmo projeto; no Docker Swarm o nome do serviço vira hostname na rede interna.

@@ -31,4 +31,4 @@ O browser abre a URL, espera a página carregar (`networkidle0`) e fica aberto p
 ## Deploy no EasyPanel
 
 Para rodar no [EasyPanel](https://easypanel.io), siga o passo a passo em **[EASYPANEL.md](./EASYPANEL.md)**:
-dois serviços no mesmo projeto (browserless + capture-service), com variáveis e URL interna entre eles.
+dois serviços no mesmo projeto (browseless + capture-service), com variáveis e URL interna entre eles.
