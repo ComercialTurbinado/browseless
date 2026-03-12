@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   browserless:
     image: ghcr.io/browserless/chromium:latest
