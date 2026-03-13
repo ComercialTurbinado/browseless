@@ -10,11 +10,12 @@ const DESKTOP_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 /**
- * Abre a URL no browser e mantém a página aberta pelo tempo indicado.
- * A página em si é responsável por ler a animação, capturar os frames e enviar ao webhook.
- * User-Agent e viewport realistas ajudam CDNs/servidores externos a liberar imagens.
+ * Abre a URL no browser e só encerra quando a página sinalizar que terminou
+ * (window.__captureDone = true), ou após timeoutMs (fallback).
+ * A página é responsável por capturar os frames, enviar ao webhook e então setar
+ * window.__captureDone = true.
  */
-export async function openPage({ url, waitMs = 30000 }) {
+export async function openPage({ url, timeoutMs = 300000 }) {
   const browser = await puppeteer.connect({
     browserWSEndpoint: BROWSERLESS_WS_URL,
   });
@@ -33,7 +34,11 @@ export async function openPage({ url, waitMs = 30000 }) {
     });
 
     await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 });
-    await new Promise((r) => setTimeout(r, waitMs));
+
+    await page.waitForFunction(
+      "window.__captureDone === true",
+      { timeout: timeoutMs }
+    );
   } finally {
     await browser.close();
   }

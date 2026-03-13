@@ -16,13 +16,18 @@ docker compose up -d
 ```bash
 curl -X POST http://localhost:4000/open \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://sua-url.com/pagina-com-animacao", "waitMs": 30000}'
+  -d '{"url": "https://sua-url.com/pagina-com-animacao"}'
 ```
 
-- **url** (obrigatório): página que faz a captura dos frames e o envio ao webhook.
-- **waitMs** (opcional): tempo em ms que a página fica aberta (default: 30000 = 30s).
+- **url** (obrigatório): página que captura os frames e envia ao webhook.
+- **timeoutMs** (opcional): tempo máximo de espera em ms se a página não sinalizar fim (default: 300000 = 5 min).
 
-O browser abre a URL, espera a página carregar (`networkidle0`) e fica aberto por `waitMs`. Durante esse tempo, o script na sua página pode rodar a animação, pegar cada frame e enviar para o webhook que você definir nela.
+O browser abre a URL e **só encerra quando a página avisar que terminou**, setando `window.__captureDone = true` no JavaScript (por exemplo, depois de enviar todos os prints ao webhook). Se a página não setar isso, o serviço fecha após `timeoutMs`.
+
+**Contrato na sua página:** ao terminar de capturar e enviar os frames, execute:
+```js
+window.__captureDone = true;
+```
 
 ## Variáveis
 
