@@ -20,6 +20,7 @@ export async function openPage({ url, timeoutMs = 900000 }) {
   const endpoint = `${BROWSERLESS_WS_URL}${sep}timeout=${timeoutMs}`;
   const browser = await puppeteer.connect({
     browserWSEndpoint: endpoint,
+    protocolTimeout: timeoutMs + 60000,
   });
 
   try {
