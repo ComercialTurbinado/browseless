@@ -13,15 +13,15 @@ app.use(express.json({ limit: "1mb" }));
  *
  * Body:
  *   - url (string): URL da página que captura os frames e envia ao webhook
- *   - timeoutMs (number, opcional): tempo máximo de espera em ms se a página não sinalizar (default: 300000 = 5 min)
+ *   - timeoutMs (number, opcional): tempo máximo de espera em ms se a página não sinalizar (default: 900000 = 15 min)
  */
 app.post("/open", async (req, res) => {
-  const { url, timeoutMs = 300000 } = req.body;
+  const { url, timeoutMs = 900000 } = req.body;
 
   if (!url) {
     return res.status(400).json({
       error: "Missing required field: url",
-      example: { url: "https://example.com/sua-pagina", timeoutMs: 300000 },
+      example: { url: "https://example.com/sua-pagina", timeoutMs: 900000 },
     });
   }
 

@@ -15,9 +15,11 @@ const DESKTOP_USER_AGENT =
  * A página é responsável por capturar os frames, enviar ao webhook e então setar
  * window.__captureDone = true.
  */
-export async function openPage({ url, timeoutMs = 300000 }) {
+export async function openPage({ url, timeoutMs = 900000 }) {
+  const sep = BROWSERLESS_WS_URL.includes("?") ? "&" : "?";
+  const endpoint = `${BROWSERLESS_WS_URL}${sep}timeout=${timeoutMs}`;
   const browser = await puppeteer.connect({
-    browserWSEndpoint: BROWSERLESS_WS_URL,
+    browserWSEndpoint: endpoint,
   });
 
   try {

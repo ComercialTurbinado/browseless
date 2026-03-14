@@ -22,7 +22,7 @@ curl -X POST http://localhost:4000/open \
 - **url** (obrigatório): página que captura os frames e envia ao webhook.
 - **timeoutMs** (opcional): tempo máximo de espera em ms se a página não sinalizar fim (default: 300000 = 5 min).
 
-O browser abre a URL e **só encerra quando a página avisar que terminou**, setando `window.__captureDone = true` no JavaScript (por exemplo, depois de enviar todos os prints ao webhook). Se a página não setar isso, o serviço fecha após `timeoutMs`.
+O browser abre a URL e **só encerra quando a página avisar que terminou**, setando `window.__captureDone = true` no JavaScript (por exemplo, depois de enviar todos os prints ao webhook). Se a página não setar isso, o serviço fecha após `timeoutMs` (default: 15 min).
 
 **Contrato na sua página:** ao terminar de capturar e enviar os frames, execute:
 ```js
