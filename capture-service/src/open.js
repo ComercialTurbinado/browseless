@@ -15,9 +15,23 @@ const DESKTOP_USER_AGENT =
  * A página é responsável por capturar os frames, enviar ao webhook e então setar
  * window.__captureDone = true.
  */
+const REDUCE_MEMORY_ARGS = [
+  "--disk-cache-size=0",
+  "--disable-application-cache",
+  "--disable-gpu",
+  "--disable-dev-shm-usage",
+  "--no-first-run",
+  "--no-default-browser-check",
+  "--disable-extensions",
+  "--disable-background-networking",
+  "--disable-sync",
+  "--metrics-recording-only",
+];
+
 export async function openPage({ url, timeoutMs = 900000 }) {
   const sep = BROWSERLESS_WS_URL.includes("?") ? "&" : "?";
-  const endpoint = `${BROWSERLESS_WS_URL}${sep}timeout=${timeoutMs}`;
+  const launch = JSON.stringify({ args: REDUCE_MEMORY_ARGS });
+  const endpoint = `${BROWSERLESS_WS_URL}${sep}timeout=${timeoutMs}&launch=${encodeURIComponent(launch)}`;
   const browser = await puppeteer.connect({
     browserWSEndpoint: endpoint,
     protocolTimeout: timeoutMs + 60000,

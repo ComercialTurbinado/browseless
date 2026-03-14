@@ -29,6 +29,8 @@ O browser abre a URL e **só encerra quando a página avisar que terminou**, set
 window.__captureDone = true;
 ```
 
+O serviço envia flags do Chrome para reduzir cache e uso de memória (disk-cache-size=0, disable-application-cache, etc.), deixando o fluxo mais leve antes da renderização do vídeo.
+
 ## Variáveis
 
 - `BROWSERLESS_TOKEN`: token do Browserless (default: `browseless-local-token`).
