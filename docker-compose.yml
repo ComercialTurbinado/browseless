@@ -6,7 +6,7 @@ services:
       TOKEN: ${BROWSERLESS_TOKEN:-browseless-local-token}
       MAX_QUEUE_LENGTH: 50
       CONNECTION_TIMEOUT: 60000
-      # Sessão pode durar até 15 min (156 frames a ~3s + pausas). Default do Browserless é 30s e mata a página.
+      # Sessão pode durar até 15 min (240 frames + envio ao webhook). Default do Browserless é 30s e mata a página.
       TIMEOUT: 900000
       ENABLE_DEBUG_VIEWER: "false"
     restart: unless-stopped
