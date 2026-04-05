@@ -28,7 +28,7 @@ const REDUCE_MEMORY_ARGS = [
   "--metrics-recording-only",
 ];
 
-export async function openPage({ url, timeoutMs = 900000 }) {
+export async function openPage({ url, timeoutMs = 900000, viewportWidth = 1920, viewportHeight = 1080 }) {
   const sep = BROWSERLESS_WS_URL.includes("?") ? "&" : "?";
   const launch = JSON.stringify({ args: REDUCE_MEMORY_ARGS });
   const endpoint = `${BROWSERLESS_WS_URL}${sep}timeout=${timeoutMs}&launch=${encodeURIComponent(launch)}`;
@@ -42,8 +42,8 @@ export async function openPage({ url, timeoutMs = 900000 }) {
 
     await page.setUserAgent(DESKTOP_USER_AGENT);
     await page.setViewport({
-      width: 1920,
-      height: 1080,
+      width: viewportWidth,
+      height: viewportHeight,
       deviceScaleFactor: 1,
     });
     await page.setExtraHTTPHeaders({

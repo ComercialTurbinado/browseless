@@ -16,7 +16,7 @@ app.use(express.json({ limit: "1mb" }));
  *   - timeoutMs (number, opcional): tempo máximo de espera em ms se a página não sinalizar (default: 900000 = 15 min)
  */
 app.post("/open", async (req, res) => {
-  const { url, timeoutMs = 900000 } = req.body;
+  const { url, timeoutMs = 900000, viewportWidth, viewportHeight } = req.body;
 
   if (!url) {
     return res.status(400).json({
@@ -26,7 +26,12 @@ app.post("/open", async (req, res) => {
   }
 
   try {
-    await openPage({ url, timeoutMs });
+    await openPage({
+      url,
+      timeoutMs,
+      ...(viewportWidth ? { viewportWidth: Number(viewportWidth) } : {}),
+      ...(viewportHeight ? { viewportHeight: Number(viewportHeight) } : {}),
+    });
     return res.json({ ok: true, url });
   } catch (err) {
     console.error("Open page error:", err);
