@@ -1,10 +1,7 @@
 import puppeteer from "puppeteer-core";
 
 const BROWSERLESS_WS_URL = process.env.BROWSERLESS_WS_URL;
-
-if (!BROWSERLESS_WS_URL) {
-  throw new Error("BROWSERLESS_WS_URL is required");
-}
+if (!BROWSERLESS_WS_URL) throw new Error("BROWSERLESS_WS_URL is required");
 
 const DESKTOP_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -23,20 +20,11 @@ const REDUCE_MEMORY_ARGS = [
 ];
 
 /**
- * Abre a URL no browser.
+ * Modo captureFrames: usa CDP Page.startScreencast — captura nativa do Chrome,
+ * sem html2canvas, sem memória extra, frames em JPEG 1080x1920 nativos.
+ * A página só precisa setar window.__remotionReady = true quando estiver pronta.
  *
- * Modo padrão (captureFrames = null):
- *   Aguarda window.__captureDone === true (a página captura os frames e envia ao webhook).
- *
- * Modo captureFrames:
- *   O Puppeteer tira screenshots nativos (page.screenshot) durante a reprodução da animação.
- *   A página só precisa setar window.__remotionReady = true quando estiver pronta.
- *   Muito mais eficiente — sem html2canvas, sem carga no browser.
- *
- *   captureFrames = {
- *     fps, durationMs, webhookFramesUrl, webhookDoneUrl, webhookMontarUrl,
- *     listingId, imobname, advertiserCode
- *   }
+ * Modo padrão: aguarda window.__captureDone = true (página faz a captura).
  */
 export async function openPage({
   url,
@@ -48,6 +36,7 @@ export async function openPage({
   const sep = BROWSERLESS_WS_URL.includes("?") ? "&" : "?";
   const launch = JSON.stringify({ args: REDUCE_MEMORY_ARGS });
   const endpoint = `${BROWSERLESS_WS_URL}${sep}timeout=${timeoutMs}&launch=${encodeURIComponent(launch)}`;
+
   const browser = await puppeteer.connect({
     browserWSEndpoint: endpoint,
     protocolTimeout: timeoutMs + 60000,
@@ -72,69 +61,77 @@ export async function openPage({
         advertiserCode = "",
       } = captureFrames;
 
-      // Aguarda a página sinalizar que está pronta (preloader terminou, animação iniciou)
+      // Aguarda animação pronta
       await page.waitForFunction("window.__remotionReady === true", { timeout: 90000 });
+      console.log(`[screencast] animação pronta — iniciando captura ${durationMs}ms @ ${fps}fps`);
 
-      const frameIntervalMs = Math.round(1000 / fps);
-      const targetFrames = Math.ceil((durationMs / 1000) * fps);
-      const captureStart = Date.now();
-      let frameNum = 0;
+      // CDP screencast — captura nativa do Chrome, muito mais eficiente que screenshot loop
+      const cdp = await page.target().createCDPSession();
 
-      console.log(`[captureFrames] início: ${targetFrames} frames alvo @ ${fps}fps, ${durationMs}ms`);
+      const collectedFrames = [];
 
-      while (Date.now() - captureStart < durationMs) {
-        const t0 = Date.now();
+      cdp.on("Page.screencastFrame", async ({ data, sessionId }) => {
+        collectedFrames.push(data); // base64 JPEG já pronto
+        // Ack imediato para Chrome continuar enviando
+        cdp.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
+      });
 
-        // Screenshot nativo do Puppeteer — rápido e sem carga no browser
-        const screenshot = await page.screenshot({ type: "jpeg", quality: 80 });
-        frameNum++;
+      await cdp.send("Page.startScreencast", {
+        format: "jpeg",
+        quality: 80,
+        maxWidth: viewportWidth,
+        maxHeight: viewportHeight,
+        everyNthFrame: Math.max(1, Math.round(60 / fps)), // aproxima o fps desejado
+      });
 
-        const fn = frameNum;
-        const timestampMs = t0 - captureStart;
+      // Aguarda duração da animação
+      await new Promise((r) => setTimeout(r, durationMs + 500));
 
-        if (webhookFramesUrl) {
-          const b64 = screenshot.toString("base64");
-          // POST sem await para não bloquear o loop de captura
-          fetch(webhookFramesUrl, {
+      await cdp.send("Page.stopScreencast").catch(() => {});
+
+      console.log(`[screencast] ${collectedFrames.length} frames coletados — enviando ao webhook`);
+
+      // Envia frames ao webhook sequencialmente (evita sobrecarga de rede)
+      const totalFrames = collectedFrames.length;
+      let framesSent = 0;
+
+      for (let i = 0; i < totalFrames; i++) {
+        const fn = i + 1;
+        if (!webhookFramesUrl) break;
+        try {
+          await fetch(webhookFramesUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               frame_number: fn,
-              total_frames: targetFrames,
+              total_frames: totalFrames,
               frame_name: `frame_${String(fn).padStart(4, "0")}.jpg`,
-              image_base64: b64,
+              image_base64: collectedFrames[i],
               listing_id: Number(listingId),
               imobname,
               advertiserCode,
               mime_type: "image/jpeg",
               fps,
-              timestamp_ms: timestampMs,
+              timestamp_ms: Math.round((i / totalFrames) * durationMs),
               render_source: "remotion",
             }),
-          }).catch((e) => console.error("[captureFrames] frame", fn, e.message));
+          });
+          framesSent++;
+        } catch (e) {
+          console.error(`[screencast] erro frame ${fn}:`, e.message);
         }
-
-        // Pace para o fps alvo
-        const elapsed = Date.now() - t0;
-        const wait = frameIntervalMs - elapsed;
-        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       }
 
-      const actualDuration = Date.now() - captureStart;
-      const actualFps = Math.round((frameNum / actualDuration) * 1000 * 10) / 10;
-      console.log(`[captureFrames] fim: ${frameNum} frames capturados, fps real ~${actualFps}`);
-
-      // Aguarda POSTs em flight terminarem
-      await new Promise((r) => setTimeout(r, 3000));
+      console.log(`[screencast] ${framesSent}/${totalFrames} frames enviados`);
 
       const done = {
         listing_id: Number(listingId),
         imobname,
         advertiserCode,
-        frames_sent: frameNum,
-        total_frames: frameNum,
+        frames_sent: framesSent,
+        total_frames: totalFrames,
         status: "done",
-        fps: actualFps,
+        fps,
         duration_ms: durationMs,
         via: "remotion_capture",
         render_source: "remotion",
@@ -145,19 +142,19 @@ export async function openPage({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(done),
-        }).catch((e) => console.error("[captureFrames] webhookDone", e.message));
+        }).catch((e) => console.error("[screencast] webhookDone:", e.message));
 
       if (webhookMontarUrl)
         await fetch(webhookMontarUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...done, action: "montar_mp4" }),
-        }).catch((e) => console.error("[captureFrames] webhookMontar", e.message));
+        }).catch((e) => console.error("[screencast] webhookMontar:", e.message));
 
       return;
     }
 
-    // Modo padrão: a página captura os frames e sinaliza quando termina
+    // Modo padrão: página captura os próprios frames e sinaliza quando termina
     await page.waitForFunction("window.__captureDone === true", { timeout: timeoutMs });
   } finally {
     await browser.close();
